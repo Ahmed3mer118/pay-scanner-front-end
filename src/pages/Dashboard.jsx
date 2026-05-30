@@ -12,6 +12,16 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 
 const CHART_COLORS = ['#f5a623', '#60a5fa', '#4ade80', '#f87171', '#c084fc'];
 
+const formatMoney = (n) => `EGP ${(n || 0).toLocaleString('ar-EG')}`;
+
+const StatCard = ({ label, value, sub, color = '' }) => (
+  <div className="stat-card">
+    <div className="stat-label">{label}</div>
+    <div className={`stat-value ${color}`}>{value}</div>
+    {sub && <div className="stat-sub">{sub}</div>}
+  </div>
+);
+
 const Dashboard = () => {
   const { stats, loading } = useStats(30000);
   const navigate = useNavigate();
@@ -19,13 +29,14 @@ const Dashboard = () => {
   if (loading) return <div className="loading-center"><div className="spinner" /></div>;
 
   const today = stats?.today || {};
+  const allTime = stats?.allTime || {};
   const charts = stats?.charts || {};
   const byMethod = stats?.byMethod || [];
 
   const barData = {
     labels: (charts.last7Days || []).map((d) => d._id?.slice(5) || ''),
     datasets: [{
-      label: 'Transfers',
+      label: 'التحويلات',
       data: (charts.last7Days || []).map((d) => d.count),
       backgroundColor: 'rgba(245,166,35,0.6)',
       borderRadius: 4,
@@ -41,7 +52,7 @@ const Dashboard = () => {
     }],
   };
 
-  const chartOpts = (dark = true) => ({
+  const chartOpts = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
@@ -49,7 +60,7 @@ const Dashboard = () => {
       x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505560', font: { size: 10 } } },
       y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505560', font: { size: 10 } } },
     },
-  });
+  };
 
   const doughnutOpts = {
     responsive: true,
@@ -62,72 +73,89 @@ const Dashboard = () => {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">/ dashboard</div>
-          <div className="page-subtitle">Live overview · Auto-refreshes every 30s</div>
+          <div className="page-title">/ لوحة التحكم</div>
+          <div className="page-subtitle">نظرة عامة · تحديث تلقائي كل 30 ثانية</div>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/upload')}>
-          + Upload Screenshot
+        <button type="button" className="btn btn-primary" onClick={() => navigate('/upload')}>
+          + رفع لقطة شاشة
         </button>
       </div>
 
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-label">Today's transfers</div>
-          <div className="stat-value amber">{today.transfers || 0}</div>
-          <div className="stat-sub">Screenshots processed</div>
+      {/* Hero summary — today vs all time */}
+      <div className="summary-hero">
+        <div className="summary-card today">
+          <div className="summary-card-label">إجمالي اليوم — مبالغ مؤكدة</div>
+          <div className="summary-card-amount">{formatMoney(today.amount)}</div>
+          <div className="summary-card-meta">
+            <span>تحويلات: <strong>{today.transfers || 0}</strong></span>
+            <span>قيد المراجعة: <strong>{today.pending || 0}</strong></span>
+            <span>مكرر: <strong>{today.duplicates || 0}</strong></span>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Money received</div>
-          <div className="stat-value green">EGP {(today.amount || 0).toLocaleString()}</div>
-          <div className="stat-sub">Verified only</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Pending review</div>
-          <div className="stat-value amber">{today.pending || 0}</div>
-          <div className="stat-sub">Awaiting action</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Duplicates blocked</div>
-          <div className="stat-value red">{today.duplicates || 0}</div>
-          <div className="stat-sub">Today</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">OCR failures</div>
-          <div className="stat-value">{today.failedOcr || 0}</div>
-          <div className="stat-sub">Manual review needed</div>
+        <div className="summary-card alltime">
+          <div className="summary-card-label">الإجمالي الكلي — مبالغ مؤكدة</div>
+          <div className="summary-card-amount">{formatMoney(allTime.amount)}</div>
+          <div className="summary-card-meta">
+            <span>كل التحويلات: <strong>{allTime.transfers || 0}</strong></span>
+            <span>مؤكدة: <strong>{allTime.verified || 0}</strong></span>
+            <span>قيد المراجعة: <strong>{allTime.pending || 0}</strong></span>
+          </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '16px', marginBottom: '24px' }}>
+      {/* Today details */}
+      <section className="stats-section">
+        <div className="stats-section-header">
+          <span className="stats-section-title">تفاصيل اليوم</span>
+          <span className="stats-section-badge live">● مباشر</span>
+        </div>
+        <div className="stat-grid">
+          <StatCard label="تحويلات اليوم" value={today.transfers || 0} sub="لقطات تمت معالجتها" color="amber" />
+          <StatCard label="مبالغ اليوم" value={formatMoney(today.amount)} sub="المؤكدة فقط" color="green" />
+          <StatCard label="قيد المراجعة" value={today.pending || 0} sub="بانتظار الإجراء" color="amber" />
+          <StatCard label="مكرر" value={today.duplicates || 0} sub="اليوم" color="red" />
+          <StatCard label="فشل OCR" value={today.failedOcr || 0} sub="يحتاج مراجعة يدوية" />
+        </div>
+      </section>
+
+      {/* All time details */}
+      <section className="stats-section">
+        <div className="stats-section-header">
+          <span className="stats-section-title">الإجمالي الكلي</span>
+          <span className="stats-section-badge">منذ البداية</span>
+        </div>
+        <div className="stat-grid">
+          <StatCard label="كل التحويلات" value={allTime.transfers || 0} sub="إجمالي السجلات" color="blue" />
+          <StatCard label="إجمالي المبالغ" value={formatMoney(allTime.amount)} sub="المؤكدة فقط" color="green" />
+          <StatCard label="مؤكدة" value={allTime.verified || 0} sub="تحويلات verified" color="green" />
+          <StatCard label="قيد المراجعة" value={allTime.pending || 0} sub="بانتظار الإجراء" color="amber" />
+          <StatCard label="مكرر" value={allTime.duplicates || 0} sub="إجمالي المكرر" color="red" />
+          <StatCard label="فشل OCR" value={allTime.failedOcr || 0} sub="إجمالي الفاشلة" />
+        </div>
+      </section>
+
+      <div className="dashboard-charts">
         <div className="card">
-          <div className="section-title">7-day transfer activity</div>
-          <div style={{ height: '200px' }}>
-            <Bar
-              data={barData}
-              options={chartOpts()}
-              aria-label="Bar chart showing daily transfer counts over 7 days"
-            />
+          <div className="section-title">نشاط آخر 7 أيام</div>
+          <div className="chart-box">
+            <Bar data={barData} options={chartOpts} aria-label="رسم بياني لعدد التحويلات خلال 7 أيام" />
           </div>
         </div>
 
         <div className="card">
-          <div className="section-title">payment methods</div>
-          <div style={{ height: '140px', marginBottom: '16px' }}>
-            <Doughnut
-              data={doughnutData}
-              options={doughnutOpts}
-              aria-label="Doughnut chart of payment method distribution"
-            />
+          <div className="section-title">طرق الدفع</div>
+          <div className="chart-box-sm">
+            <Doughnut data={doughnutData} options={doughnutOpts} aria-label="توزيع طرق الدفع" />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="method-legend">
             {byMethod.slice(0, 5).map((m, i) => (
-              <div key={m._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: CHART_COLORS[i] }} />
-                  <span style={{ color: 'var(--text2)' }}>{m._id}</span>
+              <div key={m._id} className="method-legend-item">
+                <div className="method-legend-left">
+                  <div className="method-dot" style={{ background: CHART_COLORS[i] }} />
+                  <span className="method-name">{m._id}</span>
                 </div>
-                <span style={{ fontFamily: 'var(--mono)', color: 'var(--text3)', fontSize: '11px' }}>
-                  {m.count} · EGP {(m.totalAmount || 0).toLocaleString()}
+                <span className="method-stats">
+                  {m.count} · {formatMoney(m.total || m.totalAmount || 0)}
                 </span>
               </div>
             ))}
@@ -136,20 +164,20 @@ const Dashboard = () => {
       </div>
 
       <div className="card">
-        <div className="section-title">monthly income — last 30 days</div>
-        <div style={{ height: '180px' }}>
+        <div className="section-title">الدخل الشهري — آخر 30 يوم</div>
+        <div className="chart-box">
           <Bar
             data={{
               labels: (charts.last30Days || []).map((d) => d._id?.slice(5) || ''),
               datasets: [{
-                label: 'Amount (EGP)',
+                label: 'المبلغ (EGP)',
                 data: (charts.last30Days || []).map((d) => d.amount),
                 backgroundColor: 'rgba(96,165,250,0.5)',
                 borderRadius: 3,
               }],
             }}
-            options={chartOpts()}
-            aria-label="Bar chart of monthly income over 30 days"
+            options={chartOpts}
+            aria-label="رسم بياني للدخل خلال 30 يوم"
           />
         </div>
       </div>

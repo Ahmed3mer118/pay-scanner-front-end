@@ -1,18 +1,16 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000,
 });
 
-// Attach JWT to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -24,20 +22,17 @@ api.interceptors.response.use(
   }
 );
 
-// Auth
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   me: () => api.get('/auth/me'),
 };
 
-// Dashboard
 export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
   getMethods: () => api.get('/dashboard/methods'),
 };
 
-// Transfers
 export const transfersAPI = {
   getAll: (params) => api.get('/transfers', { params }),
   getOne: (id) => api.get(`/transfers/${id}`),
