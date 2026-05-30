@@ -82,6 +82,29 @@ const TransferDetail = () => {
         </div>
       </div>
 
+      {transfer.imageUrl && (
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="section-title">screenshot</div>
+          <a href={transfer.imageUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+            <img
+              src={transfer.imageUrl}
+              alt="Transfer screenshot"
+              style={{
+                width: '100%',
+                maxHeight: '480px',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+              }}
+            />
+          </a>
+          <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
+            Click image to open full size
+          </div>
+        </div>
+      )}
+
       <div className="detail-grid">
         {/* Transfer Info */}
         <div className="card">

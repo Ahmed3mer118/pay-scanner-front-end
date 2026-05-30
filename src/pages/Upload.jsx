@@ -40,10 +40,10 @@ const Upload = () => {
       fd.append('screenshot', file);
       const { data } = await transfersAPI.upload(fd, setProgress);
       setResult(data);
-      if (data.success) {
+      if (data.status === 'duplicate' && data.transferId) {
+        toast('Duplicate screenshot saved for review', { icon: '🔁' });
+      } else if (data.success) {
         toast.success('Transfer processed successfully!');
-      } else if (data.status === 'duplicate') {
-        toast.error('Duplicate screenshot detected');
       } else {
         toast.error(data.message || 'Processing failed');
       }
@@ -130,11 +130,32 @@ const Upload = () => {
             padding: '16px',
             borderRadius: '8px',
             marginBottom: '20px',
-            background: result.success ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
-            border: `1px solid ${result.success ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
+            background: result.status === 'duplicate'
+              ? 'rgba(245,166,35,0.08)'
+              : result.success
+                ? 'rgba(74,222,128,0.08)'
+                : 'rgba(248,113,113,0.08)',
+            border: `1px solid ${result.status === 'duplicate'
+              ? 'rgba(245,166,35,0.2)'
+              : result.success
+                ? 'rgba(74,222,128,0.2)'
+                : 'rgba(248,113,113,0.2)'}`,
           }}>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: result.success ? 'var(--green)' : 'var(--red)', marginBottom: '4px' }}>
-              {result.success ? '✓ Transfer Processed' : `✗ ${result.status?.replace('_', ' ')}`}
+            <div style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: result.status === 'duplicate'
+                ? 'var(--amber)'
+                : result.success
+                  ? 'var(--green)'
+                  : 'var(--red)',
+              marginBottom: '4px',
+            }}>
+              {result.status === 'duplicate'
+                ? '🔁 Duplicate Saved'
+                : result.success
+                  ? '✓ Transfer Processed'
+                  : `✗ ${result.status?.replace('_', ' ')}`}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text2)' }}>{result.message}</div>
           </div>
