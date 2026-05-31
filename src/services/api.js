@@ -39,7 +39,17 @@ export const transfersAPI = {
   upload: (formData, onProgress) =>
     api.post('/transfers/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (e) => onProgress && onProgress(Math.round((e.loaded * 100) / e.total)),
+      timeout: 300000,
+      validateStatus: (status) => status >= 200 && status < 500,
+      onUploadProgress: (e) => {
+        if (!onProgress) return;
+        if (e.total && e.loaded >= e.total) {
+          onProgress(45);
+        } else {
+          const pct = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
+          onProgress(Math.min(pct, 40));
+        }
+      },
     }),
   updateStatus: (id, data) => api.patch(`/transfers/${id}/status`, data),
   bulkVerify: (ids) => api.post('/transfers/bulk-verify', { ids }),

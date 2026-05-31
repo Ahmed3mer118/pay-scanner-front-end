@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { transfersAPI } from '../services/api';
+import { useI18n } from '../context/I18nContext';
 
 const Upload = () => {
   const navigate = useNavigate();
+  const { t, locale, isRtl } = useI18n();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -15,7 +17,7 @@ const Upload = () => {
 
   const handleFile = (f) => {
     if (!f || !f.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error(t('upload.invalidFile'));
       return;
     }
     setFile(f);
@@ -39,16 +41,29 @@ const Upload = () => {
       const fd = new FormData();
       fd.append('screenshot', file);
       const { data } = await transfersAPI.upload(fd, setProgress);
-      setResult(data);
-      if (data.status === 'duplicate' && data.transferId) {
-        toast('Duplicate screenshot saved for review', { icon: '🔁' });
+      setProgress(100);
+
+      const normalized = {
+        ...data,
+        transferId: data.transferId || data.duplicateOf,
+      };
+      setResult(normalized);
+
+      if (data.status === 'duplicate') {
+        toast(t('upload.duplicateSaved'), { icon: '🔁' });
       } else if (data.success) {
-        toast.success('Transfer processed successfully!');
+        toast.success(t('upload.success'));
       } else {
-        toast.error(data.message || 'Processing failed');
+        toast.error(data.message || t('upload.failed'));
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Upload failed');
+      const msg = err.code === 'ECONNABORTED'
+        ? t('upload.timeout')
+        : err.response?.data?.error
+          || err.response?.data?.details?.join?.(', ')
+          || err.message
+          || t('upload.uploadFailed');
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -56,18 +71,19 @@ const Upload = () => {
 
   const reset = () => { setFile(null); setPreview(null); setResult(null); setProgress(0); };
 
+  const progressLabel = progress < 45 ? t('upload.uploading') : t('upload.analyzing');
+
   return (
     <div className="page" style={{ maxWidth: '700px' }}>
       <div className="page-header">
         <div>
-          <div className="page-title">/ upload screenshot</div>
-          <div className="page-subtitle">Manual screenshot processing</div>
+          <div className="page-title">{t('upload.title')}</div>
+          <div className="page-subtitle">{t('upload.subtitle')}</div>
         </div>
       </div>
 
       {!result ? (
         <>
-          {/* Drop zone */}
           <div
             className="card"
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -97,17 +113,16 @@ const Upload = () => {
             ) : (
               <>
                 <div style={{ fontSize: '36px', color: 'var(--text3)' }}>↑</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text2)' }}>Drop screenshot here or click to browse</div>
-                <div style={{ fontSize: '11px', color: 'var(--text3)' }}>JPEG, PNG, WEBP — max 10MB</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text2)' }}>{t('upload.dropHint')}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text3)' }}>{t('upload.formats')}</div>
               </>
             )}
           </div>
 
-          {/* Progress */}
           {uploading && (
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)', marginBottom: '6px' }}>
-                <span>Processing...</span>
+                <span>{progressLabel}</span>
                 <span>{progress}%</span>
               </div>
               <div style={{ height: '4px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
@@ -118,13 +133,12 @@ const Upload = () => {
 
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-primary" onClick={handleSubmit} disabled={!file || uploading} style={{ flex: 1, justifyContent: 'center' }}>
-              {uploading ? 'Processing...' : '⚡ Process Screenshot'}
+              {uploading ? t('upload.processing') : t('upload.processBtn')}
             </button>
-            {file && <button className="btn" onClick={reset}>✕ Clear</button>}
+            {file && <button className="btn" onClick={reset}>{t('common.clear')}</button>}
           </div>
         </>
       ) : (
-        /* Result card */
         <div className="card">
           <div style={{
             padding: '16px',
@@ -152,9 +166,9 @@ const Upload = () => {
               marginBottom: '4px',
             }}>
               {result.status === 'duplicate'
-                ? '🔁 Duplicate Saved'
+                ? t('upload.duplicateTitle')
                 : result.success
-                  ? '✓ Transfer Processed'
+                  ? t('upload.successTitle')
                   : `✗ ${result.status?.replace('_', ' ')}`}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text2)' }}>{result.message}</div>
@@ -163,13 +177,13 @@ const Upload = () => {
           {result.transfer && (
             <div>
               {[
-                ['Sender', result.transfer.senderName],
-                ['Phone', result.transfer.senderPhone],
-                ['Amount', `EGP ${(result.transfer.amount || 0).toLocaleString()}`],
-                ['Method', result.transfer.paymentMethod],
-                ['Transaction ID', result.transfer.transactionId],
-                ['Status', result.transfer.status],
-                ['OCR Confidence', `${result.transfer.ocrConfidence}%`],
+                [t('upload.sender'), result.transfer.senderName],
+                [t('upload.phone'), result.transfer.senderPhone],
+                [t('upload.amount'), `${t('common.egp')} ${(result.transfer.amount || 0).toLocaleString(locale)}`],
+                [t('upload.method'), result.transfer.paymentMethod],
+                [t('upload.transactionId'), result.transfer.transactionId],
+                [t('transfers.status'), result.transfer.status],
+                [t('upload.ocrConfidence'), `${result.transfer.ocrConfidence}%`],
               ].map(([label, value]) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text2)' }}>{label}</span>
@@ -179,14 +193,14 @@ const Upload = () => {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
             {result.transferId && (
               <button className="btn btn-primary" onClick={() => navigate(`/transfers/${result.transferId}`)}>
-                View Details →
+                {t('common.viewDetails')} {isRtl ? '←' : '→'}
               </button>
             )}
-            <button className="btn" onClick={reset}>Upload Another</button>
-            <button className="btn" onClick={() => navigate('/transfers')}>All Transfers</button>
+            <button className="btn" onClick={reset}>{t('common.uploadAnother')}</button>
+            <button className="btn" onClick={() => navigate('/transfers')}>{t('common.allTransfers')}</button>
           </div>
         </div>
       )}

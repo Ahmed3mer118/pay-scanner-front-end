@@ -1,18 +1,20 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTransfers } from '../hooks/useData';
 import { transfersAPI } from '../services/api';
+import { useI18n } from '../context/I18nContext';
 
 const STATUSES = ['all', 'verified', 'pending', 'duplicate', 'suspicious', 'failed_ocr'];
 const METHODS = ['', 'InstaPay', 'Vodafone Cash', 'Etisalat Cash', 'Orange Cash', 'Bank Transfer'];
 
-const StatusBadge = ({ status }) => (
-  <span className={`badge ${status}`}>{status?.replace('_', ' ')}</span>
+const StatusBadge = ({ status, t }) => (
+  <span className={`badge ${status}`}>{t(`transfers.statuses.${status}`) || status?.replace('_', ' ')}</span>
 );
 
 const Transfers = () => {
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
   const [filters, setFilters] = useState({ status: 'all', method: '', search: '', page: 1 });
   const [selected, setSelected] = useState([]);
 
@@ -31,10 +33,10 @@ const Transfers = () => {
   const handleStatusChange = async (id, status) => {
     try {
       await transfersAPI.updateStatus(id, { status });
-      toast.success(`Marked as ${status}`);
+      toast.success(t('transfers.markedAs', { status: t(`transfers.statuses.${status}`) }));
       refetch();
     } catch {
-      toast.error('Failed to update status');
+      toast.error(t('transfers.updateFailed'));
     }
   };
 
@@ -42,11 +44,11 @@ const Transfers = () => {
     if (!selected.length) return;
     try {
       await transfersAPI.bulkVerify(selected);
-      toast.success(`${selected.length} transfers verified`);
+      toast.success(t('transfers.bulkVerified', { count: selected.length }));
       setSelected([]);
       refetch();
     } catch {
-      toast.error('Bulk verify failed');
+      toast.error(t('transfers.bulkFailed'));
     }
   };
 
@@ -57,24 +59,23 @@ const Transfers = () => {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">/ transfers</div>
+          <div className="page-title">{t('transfers.title')}</div>
           <div className="page-subtitle">
-            {pagination.total || 0} total records
+            {pagination.total || 0} {t('transfers.totalRecords')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {selected.length > 0 && (
             <button className="btn btn-success" onClick={handleBulkVerify}>
-              ✓ Verify {selected.length} selected
+              {t('transfers.verifySelected', { count: selected.length })}
             </button>
           )}
           <button className="btn btn-primary" onClick={() => navigate('/upload')}>
-            + Upload
+            {t('transfers.upload')}
           </button>
         </div>
       </div>
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           {STATUSES.map((s) => (
@@ -89,23 +90,21 @@ const Transfers = () => {
                 color: filters.status === s ? 'var(--amber)' : 'var(--text2)',
               }}
             >
-              {s === 'all' ? 'All' : s.replace('_', ' ')}
+              {t(`transfers.statuses.${s}`)}
             </button>
           ))}
         </div>
         <select className="input" style={{ width: 'auto' }} value={filters.method} onChange={(e) => updateFilter('method', e.target.value)}>
-          <option value="">All methods</option>
+          <option value="">{t('transfers.allMethods')}</option>
           {METHODS.filter(Boolean).map((m) => <option key={m}>{m}</option>)}
         </select>
       </div>
 
-      {/* Search */}
-      <div style={{ position: 'relative', marginBottom: '16px' }}>
-        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', fontSize: '14px' }}>⌕</span>
+      <div className="search-wrap" style={{ position: 'relative', marginBottom: '16px' }}>
+        <span className="search-icon">⌕</span>
         <input
-          className="input"
-          style={{ paddingLeft: '32px' }}
-          placeholder="Search by sender name, phone, or transaction ID..."
+          className="input search-input"
+          placeholder={t('transfers.searchPlaceholder')}
           value={filters.search}
           onChange={(e) => updateFilter('search', e.target.value)}
         />
@@ -116,7 +115,7 @@ const Transfers = () => {
           <div className="loading-center"><div className="spinner" /></div>
         ) : transfers.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: '13px' }}>
-            No transfers found
+            {t('transfers.noResults')}
           </div>
         ) : (
           <div className="table-wrap">
@@ -124,51 +123,51 @@ const Transfers = () => {
               <thead>
                 <tr>
                   <th style={{ width: '36px' }}></th>
-                  <th>Sender</th>
-                  <th>Phone / Txn ID</th>
-                  <th>Amount</th>
-                  <th>Method</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>{t('transfers.sender')}</th>
+                  <th>{t('transfers.phoneTxn')}</th>
+                  <th>{t('transfers.amount')}</th>
+                  <th>{t('transfers.method')}</th>
+                  <th>{t('transfers.date')}</th>
+                  <th>{t('transfers.status')}</th>
+                  <th>{t('transfers.actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id} onClick={() => navigate(`/transfers/${t._id}`)}>
+                {transfers.map((tr) => (
+                  <tr key={tr._id} onClick={() => navigate(`/transfers/${tr._id}`)}>
                     <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        checked={selected.includes(t._id)}
-                        onChange={() => toggleSelect(t._id)}
+                        checked={selected.includes(tr._id)}
+                        onChange={() => toggleSelect(tr._id)}
                         style={{ accentColor: 'var(--amber)' }}
                       />
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500 }}>{t.senderName || '—'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text3)' }}>{t.receiverName || ''}</div>
+                      <div style={{ fontWeight: 500 }}>{tr.senderName || '—'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text3)' }}>{tr.receiverName || ''}</div>
                     </td>
                     <td className="mono">
-                      <div>{t.senderPhone || '—'}</div>
-                      <div style={{ fontSize: '10.5px', color: 'var(--text3)' }}>{t.transactionId || ''}</div>
+                      <div>{tr.senderPhone || '—'}</div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text3)' }}>{tr.transactionId || ''}</div>
                     </td>
-                    <td className="amount">EGP {(t.amount || 0).toLocaleString()}</td>
+                    <td className="amount">{t('common.egp')} {(tr.amount || 0).toLocaleString(locale)}</td>
                     <td>
                       <span style={{ fontSize: '11.5px', padding: '3px 7px', borderRadius: '4px', background: 'var(--bg3)', color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                        {t.paymentMethod}
+                        {tr.paymentMethod}
                       </span>
                     </td>
                     <td className="mono" style={{ fontSize: '11.5px', color: 'var(--text3)' }}>
-                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-EG') : '—'}
+                      {tr.createdAt ? new Date(tr.createdAt).toLocaleDateString(locale) : '—'}
                     </td>
-                    <td><StatusBadge status={t.status} /></td>
+                    <td><StatusBadge status={tr.status} t={t} /></td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        {t.status !== 'verified' && (
-                          <button className="btn btn-sm btn-success" onClick={() => handleStatusChange(t._id, 'verified')}>✓</button>
+                        {tr.status !== 'verified' && (
+                          <button className="btn btn-sm btn-success" onClick={() => handleStatusChange(tr._id, 'verified')}>✓</button>
                         )}
-                        {t.status !== 'suspicious' && (
-                          <button className="btn btn-sm btn-danger" onClick={() => handleStatusChange(t._id, 'suspicious')}>!</button>
+                        {tr.status !== 'suspicious' && (
+                          <button className="btn btn-sm btn-danger" onClick={() => handleStatusChange(tr._id, 'suspicious')}>!</button>
                         )}
                       </div>
                     </td>
@@ -179,7 +178,6 @@ const Transfers = () => {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination.pages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '16px', borderTop: '1px solid var(--border)' }}>
             {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (

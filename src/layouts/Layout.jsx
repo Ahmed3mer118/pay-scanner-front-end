@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import './Layout.css';
-
-const NAV = [
-  { to: '/dashboard', icon: '⬡', label: 'لوحة التحكم' },
-  { to: '/transfers', icon: '⇌', label: 'التحويلات' },
-  { to: '/upload', icon: '↑', label: 'رفع صورة' },
-];
 
 const Layout = () => {
   const { user, logout } = useAuth();
+  const { t, toggleLang, isRtl } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+
+  const NAV = [
+    { to: '/dashboard', icon: '⬡', label: t('nav.dashboard') },
+    { to: '/transfers', icon: '⇌', label: t('nav.transfers') },
+    { to: '/upload', icon: '↑', label: t('nav.upload') },
+  ];
 
   useEffect(() => {
     setMobileOpen(false);
@@ -30,7 +32,7 @@ const Layout = () => {
         <button
           type="button"
           className="sidebar-overlay"
-          aria-label="إغلاق القائمة"
+          aria-label={t('layout.closeMenu')}
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -45,15 +47,15 @@ const Layout = () => {
             type="button"
             className="collapse-btn desktop-only"
             onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
+            aria-label={collapsed ? t('layout.expandMenu') : t('layout.collapseMenu')}
           >
-            {collapsed ? '→' : '←'}
+            {collapsed ? (isRtl ? '→' : '←') : (isRtl ? '←' : '→')}
           </button>
           <button
             type="button"
             className="collapse-btn mobile-only"
             onClick={() => setMobileOpen(false)}
-            aria-label="إغلاق"
+            aria-label={t('layout.close')}
           >
             ✕
           </button>
@@ -82,7 +84,10 @@ const Layout = () => {
               </div>
             )}
           </div>
-          <button type="button" className="logout-btn" onClick={logout} title="تسجيل الخروج">⏻</button>
+          <button type="button" className="lang-btn" onClick={toggleLang} title={t('layout.langSwitch')}>
+            {t('layout.langSwitch')}
+          </button>
+          <button type="button" className="logout-btn" onClick={logout} title={t('layout.logout')}>⏻</button>
         </div>
       </aside>
 
@@ -92,18 +97,21 @@ const Layout = () => {
             type="button"
             className="menu-btn"
             onClick={() => setMobileOpen(true)}
-            aria-label="فتح القائمة"
+            aria-label={t('layout.openMenu')}
           >
             ☰
           </button>
           <span className="mobile-brand">◈ PayScanner</span>
+          <button type="button" className="lang-btn lang-btn-mobile" onClick={toggleLang}>
+            {t('layout.langSwitch')}
+          </button>
         </header>
 
         <main className="main-content">
           <Outlet />
         </main>
 
-        <nav className="bottom-nav mobile-only" aria-label="التنقل السريع">
+        <nav className="bottom-nav mobile-only" aria-label={t('layout.quickNav')}>
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
               <span className="bottom-nav-icon">{n.icon}</span>

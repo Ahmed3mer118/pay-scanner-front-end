@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { I18nProvider, useI18n } from './context/I18nContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './layouts/Layout';
 import Dashboard from './pages/Dashboard';
@@ -11,14 +12,19 @@ import Login from './pages/Login';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen">Loading...</div>;
+  const { t } = useI18n();
+  if (loading) return <div className="loading-screen">{t('common.loading')}</div>;
   return user ? children : <Navigate to="/login" replace />;
 };
 
-const App = () => (
-  <AuthProvider>
-    <BrowserRouter>
-      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+const AppRoutes = () => {
+  const { dir } = useI18n();
+  return (
+    <>
+      <Toaster
+        position={dir === 'rtl' ? 'top-left' : 'top-right'}
+        toastOptions={{ duration: 3000 }}
+      />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -29,8 +35,18 @@ const App = () => (
           <Route path="upload" element={<Upload />} />
         </Route>
       </Routes>
-    </BrowserRouter>
-  </AuthProvider>
+    </>
+  );
+};
+
+const App = () => (
+  <I18nProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
+  </I18nProvider>
 );
 
 export default App;

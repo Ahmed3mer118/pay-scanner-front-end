@@ -7,12 +7,11 @@ import {
   ArcElement, Tooltip, Legend,
 } from 'chart.js';
 import { useStats } from '../hooks/useData';
+import { useI18n } from '../context/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 const CHART_COLORS = ['#f5a623', '#60a5fa', '#4ade80', '#f87171', '#c084fc'];
-
-const formatMoney = (n) => `EGP ${(n || 0).toLocaleString('ar-EG')}`;
 
 const StatCard = ({ label, value, sub, color = '' }) => (
   <div className="stat-card">
@@ -25,6 +24,9 @@ const StatCard = ({ label, value, sub, color = '' }) => (
 const Dashboard = () => {
   const { stats, loading } = useStats(30000);
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
+
+  const formatMoney = (n) => `${t('common.egp')} ${(n || 0).toLocaleString(locale)}`;
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>;
 
@@ -36,7 +38,7 @@ const Dashboard = () => {
   const barData = {
     labels: (charts.last7Days || []).map((d) => d._id?.slice(5) || ''),
     datasets: [{
-      label: 'التحويلات',
+      label: t('dashboard.transfers'),
       data: (charts.last7Days || []).map((d) => d.count),
       backgroundColor: 'rgba(245,166,35,0.6)',
       borderRadius: 4,
@@ -73,79 +75,76 @@ const Dashboard = () => {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">/ لوحة التحكم</div>
-          <div className="page-subtitle">نظرة عامة · تحديث تلقائي كل 30 ثانية</div>
+          <div className="page-title">{t('dashboard.title')}</div>
+          <div className="page-subtitle">{t('dashboard.subtitle')}</div>
         </div>
         <button type="button" className="btn btn-primary" onClick={() => navigate('/upload')}>
-          + رفع لقطة شاشة
+          {t('dashboard.uploadBtn')}
         </button>
       </div>
 
-      {/* Hero summary — today vs all time */}
       <div className="summary-hero">
         <div className="summary-card today">
-          <div className="summary-card-label">إجمالي اليوم — مبالغ مؤكدة</div>
+          <div className="summary-card-label">{t('dashboard.todayTotal')}</div>
           <div className="summary-card-amount">{formatMoney(today.amount)}</div>
           <div className="summary-card-meta">
-            <span>تحويلات: <strong>{today.transfers || 0}</strong></span>
-            <span>قيد المراجعة: <strong>{today.pending || 0}</strong></span>
-            <span>مكرر: <strong>{today.duplicates || 0}</strong></span>
+            <span>{t('dashboard.transfers')}: <strong>{today.transfers || 0}</strong></span>
+            <span>{t('dashboard.pending')}: <strong>{today.pending || 0}</strong></span>
+            <span>{t('dashboard.duplicate')}: <strong>{today.duplicates || 0}</strong></span>
           </div>
         </div>
         <div className="summary-card alltime">
-          <div className="summary-card-label">الإجمالي الكلي — مبالغ مؤكدة</div>
+          <div className="summary-card-label">{t('dashboard.allTimeTotal')}</div>
           <div className="summary-card-amount">{formatMoney(allTime.amount)}</div>
           <div className="summary-card-meta">
-            <span>كل التحويلات: <strong>{allTime.transfers || 0}</strong></span>
-            <span>مؤكدة: <strong>{allTime.verified || 0}</strong></span>
-            <span>قيد المراجعة: <strong>{allTime.pending || 0}</strong></span>
+            <span>{t('dashboard.allTransfers')}: <strong>{allTime.transfers || 0}</strong></span>
+            <span>{t('dashboard.verified')}: <strong>{allTime.verified || 0}</strong></span>
+            <span>{t('dashboard.pending')}: <strong>{allTime.pending || 0}</strong></span>
           </div>
         </div>
       </div>
 
-      {/* Today details */}
       <section className="stats-section">
         <div className="stats-section-header">
-          <span className="stats-section-title">تفاصيل اليوم</span>
-          <span className="stats-section-badge live">● مباشر</span>
+          <span className="stats-section-title">{t('dashboard.todayDetails')}</span>
+          <span className="stats-section-badge live">{t('dashboard.live')}</span>
         </div>
         <div className="stat-grid">
-          <StatCard label="تحويلات اليوم" value={today.transfers || 0} sub="لقطات تمت معالجتها" color="amber" />
-          <StatCard label="مبالغ اليوم" value={formatMoney(today.amount)} sub="المؤكدة فقط" color="green" />
-          <StatCard label="قيد المراجعة" value={today.pending || 0} sub="بانتظار الإجراء" color="amber" />
-          <StatCard label="مكرر" value={today.duplicates || 0} sub="اليوم" color="red" />
-          <StatCard label="فشل OCR" value={today.failedOcr || 0} sub="يحتاج مراجعة يدوية" />
+          <StatCard label={t('dashboard.todayTransfers')} value={today.transfers || 0} sub={t('dashboard.processed')} color="amber" />
+          <StatCard label={t('dashboard.todayAmount')} value={formatMoney(today.amount)} sub={t('dashboard.verifiedOnly')} color="green" />
+          <StatCard label={t('dashboard.pending')} value={today.pending || 0} sub={t('dashboard.awaitingAction')} color="amber" />
+          <StatCard label={t('dashboard.duplicate')} value={today.duplicates || 0} sub={t('dashboard.todayDetails')} color="red" />
+          <StatCard label={t('dashboard.failedOcr')} value={today.failedOcr || 0} sub={t('dashboard.needsReview')} />
         </div>
       </section>
 
-      {/* All time details */}
       <section className="stats-section">
         <div className="stats-section-header">
-          <span className="stats-section-title">الإجمالي الكلي</span>
-          <span className="stats-section-badge">منذ البداية</span>
+          <span className="stats-section-title">{t('dashboard.allTimeDetails')}</span>
+          <span className="stats-section-badge">{t('dashboard.sinceStart')}</span>
         </div>
         <div className="stat-grid">
-          <StatCard label="كل التحويلات" value={allTime.transfers || 0} sub="إجمالي السجلات" color="blue" />
-          <StatCard label="إجمالي المبالغ" value={formatMoney(allTime.amount)} sub="المؤكدة فقط" color="green" />
-          <StatCard label="مؤكدة" value={allTime.verified || 0} sub="تحويلات verified" color="green" />
-          <StatCard label="قيد المراجعة" value={allTime.pending || 0} sub="بانتظار الإجراء" color="amber" />
-          <StatCard label="مكرر" value={allTime.duplicates || 0} sub="إجمالي المكرر" color="red" />
-          <StatCard label="فشل OCR" value={allTime.failedOcr || 0} sub="إجمالي الفاشلة" />
+          <StatCard label={t('dashboard.allTransfers')} value={allTime.transfers || 0} sub={t('dashboard.totalRecords')} color="blue" />
+          <StatCard label={t('dashboard.todayAmount')} value={formatMoney(allTime.amount)} sub={t('dashboard.verifiedOnly')} color="green" />
+          <StatCard label={t('dashboard.verified')} value={allTime.verified || 0} sub="verified" color="green" />
+          <StatCard label={t('dashboard.pending')} value={allTime.pending || 0} sub={t('dashboard.awaitingAction')} color="amber" />
+          <StatCard label={t('dashboard.duplicate')} value={allTime.duplicates || 0} sub={t('dashboard.allTimeDetails')} color="red" />
+          <StatCard label={t('dashboard.failedOcr')} value={allTime.failedOcr || 0} sub={t('dashboard.needsReview')} />
         </div>
       </section>
 
       <div className="dashboard-charts">
         <div className="card">
-          <div className="section-title">نشاط آخر 7 أيام</div>
+          <div className="section-title">{t('dashboard.activity7')}</div>
           <div className="chart-box">
-            <Bar data={barData} options={chartOpts} aria-label="رسم بياني لعدد التحويلات خلال 7 أيام" />
+            <Bar data={barData} options={chartOpts} />
           </div>
         </div>
 
         <div className="card">
-          <div className="section-title">طرق الدفع</div>
+          <div className="section-title">{t('dashboard.paymentMethods')}</div>
           <div className="chart-box-sm">
-            <Doughnut data={doughnutData} options={doughnutOpts} aria-label="توزيع طرق الدفع" />
+            <Doughnut data={doughnutData} options={doughnutOpts} />
           </div>
           <div className="method-legend">
             {byMethod.slice(0, 5).map((m, i) => (
@@ -164,20 +163,19 @@ const Dashboard = () => {
       </div>
 
       <div className="card">
-        <div className="section-title">الدخل الشهري — آخر 30 يوم</div>
+        <div className="section-title">{t('dashboard.monthlyIncome')}</div>
         <div className="chart-box">
           <Bar
             data={{
               labels: (charts.last30Days || []).map((d) => d._id?.slice(5) || ''),
               datasets: [{
-                label: 'المبلغ (EGP)',
+                label: t('dashboard.amountLabel'),
                 data: (charts.last30Days || []).map((d) => d.amount),
                 backgroundColor: 'rgba(96,165,250,0.5)',
                 borderRadius: 3,
               }],
             }}
             options={chartOpts}
-            aria-label="رسم بياني للدخل خلال 30 يوم"
           />
         </div>
       </div>

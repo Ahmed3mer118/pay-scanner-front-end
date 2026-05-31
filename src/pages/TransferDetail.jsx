@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTransfer } from '../hooks/useData';
 import { transfersAPI } from '../services/api';
+import { useI18n } from '../context/I18nContext';
 
 const Field = ({ label, value, mono }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -41,50 +42,52 @@ const TransferDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { transfer, loading } = useTransfer(id);
+  const { t, locale } = useI18n();
   const [updating, setUpdating] = useState(false);
 
   const handleStatus = async (status) => {
     setUpdating(true);
     try {
       await transfersAPI.updateStatus(id, { status });
-      toast.success(`Status updated to ${status}`);
+      toast.success(t('detail.statusUpdated', { status: t(`transfers.statuses.${status}`) }));
       window.location.reload();
     } catch {
-      toast.error('Update failed');
+      toast.error(t('detail.updateFailed'));
     } finally {
       setUpdating(false);
     }
   };
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>;
-  if (!transfer) return <div className="page"><div className="page-title">Transfer not found</div></div>;
+  if (!transfer) return <div className="page"><div className="page-title">{t('detail.notFound')}</div></div>;
 
   const ai = transfer.aiValidation || {};
   const created = new Date(transfer.createdAt);
+  const timeFmt = (d) => d.toLocaleTimeString(locale);
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <button className="btn btn-sm" onClick={() => navigate('/transfers')} style={{ marginBottom: '8px' }}>
-            ← Back
+            {t('detail.back')}
           </button>
           <div className="page-title">/ {transfer.transactionId || transfer._id?.slice(-8)}</div>
-          <div className="page-subtitle">{transfer.paymentMethod} · {created.toLocaleString('en-EG')}</div>
+          <div className="page-subtitle">{transfer.paymentMethod} · {created.toLocaleString(locale)}</div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {transfer.status !== 'verified' && (
-            <button className="btn btn-success" disabled={updating} onClick={() => handleStatus('verified')}>✓ Verify</button>
+            <button className="btn btn-success" disabled={updating} onClick={() => handleStatus('verified')}>{t('detail.verify')}</button>
           )}
           {transfer.status !== 'suspicious' && (
-            <button className="btn btn-danger" disabled={updating} onClick={() => handleStatus('suspicious')}>! Flag</button>
+            <button className="btn btn-danger" disabled={updating} onClick={() => handleStatus('suspicious')}>{t('detail.flag')}</button>
           )}
         </div>
       </div>
 
       {transfer.imageUrl && (
         <div className="card" style={{ marginBottom: '16px' }}>
-          <div className="section-title">screenshot</div>
+          <div className="section-title">{t('detail.screenshot')}</div>
           <a href={transfer.imageUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
             <img
               src={transfer.imageUrl}
@@ -100,13 +103,12 @@ const TransferDetail = () => {
             />
           </a>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-            Click image to open full size
+            {t('detail.clickFullSize')}
           </div>
         </div>
       )}
 
       <div className="detail-grid">
-        {/* Transfer Info */}
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(245,166,35,0.1)', border: '1px solid var(--amber-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 700, color: 'var(--amber)' }}>
@@ -116,30 +118,29 @@ const TransferDetail = () => {
               <div style={{ fontWeight: 600, fontSize: '15px' }}>{transfer.senderName || 'Unknown'}</div>
               <div style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>{transfer.senderPhone || ''}</div>
             </div>
-            <span className={`badge ${transfer.status}`} style={{ marginLeft: 'auto' }}>{transfer.status?.replace('_', ' ')}</span>
+            <span className={`badge ${transfer.status}`} style={{ marginInlineStart: 'auto' }}>{t(`transfers.statuses.${transfer.status}`) || transfer.status?.replace('_', ' ')}</span>
           </div>
-          <Field label="Amount" value={`EGP ${(transfer.amount || 0).toLocaleString()}`} />
-          <Field label="Payment method" value={transfer.paymentMethod} />
-          <Field label="Transaction ID" value={transfer.transactionId} mono />
-          <Field label="Transfer date" value={transfer.transferDate ? new Date(transfer.transferDate).toLocaleString('en-EG') : '—'} />
-          <Field label="Sender phone" value={transfer.senderPhone} mono />
-          <Field label="Receiver name" value={transfer.receiverName} />
-          <Field label="Receiver phone" value={transfer.receiverPhone} mono />
-          <Field label="Source" value={transfer.source} />
-          <Field label="Google Sheets synced" value={transfer.sheetsSynced ? `✓ Row ${transfer.sheetsRowIndex}` : 'Not synced'} />
+          <Field label={t('detail.amount')} value={`${t('common.egp')} ${(transfer.amount || 0).toLocaleString(locale)}`} />
+          <Field label={t('detail.paymentMethod')} value={transfer.paymentMethod} />
+          <Field label={t('detail.transactionId')} value={transfer.transactionId} mono />
+          <Field label={t('detail.transferDate')} value={transfer.transferDate ? new Date(transfer.transferDate).toLocaleString(locale) : '—'} />
+          <Field label={t('detail.senderPhone')} value={transfer.senderPhone} mono />
+          <Field label={t('detail.receiverName')} value={transfer.receiverName} />
+          <Field label={t('detail.receiverPhone')} value={transfer.receiverPhone} mono />
+          <Field label={t('detail.source')} value={transfer.source} />
+          <Field label={t('detail.sheetsSynced')} value={transfer.sheetsSynced ? t('detail.syncedRow', { row: transfer.sheetsRowIndex }) : t('detail.notSynced')} />
         </div>
 
-        {/* AI Validation */}
         <div>
           <div className="card" style={{ marginBottom: '12px' }}>
-            <div className="section-title">AI validation</div>
-            <ValidationRow label="Duplicate image hash" passed={ai.duplicateHash} />
-            <ValidationRow label="Duplicate transaction ID" passed={ai.duplicateTransactionId} />
-            <ValidationRow label="Amount valid" passed={ai.amountValid} />
-            <ValidationRow label="Phone number format" passed={ai.phoneValid} />
-            <ValidationRow label="Tampering detected" passed={!ai.tamperingDetected} />
+            <div className="section-title">{t('detail.aiValidation')}</div>
+            <ValidationRow label={t('detail.duplicateHash')} passed={ai.duplicateHash} />
+            <ValidationRow label={t('detail.duplicateTxn')} passed={ai.duplicateTransactionId} />
+            <ValidationRow label={t('detail.amountValid')} passed={ai.amountValid} />
+            <ValidationRow label={t('detail.phoneValid')} passed={ai.phoneValid} />
+            <ValidationRow label={t('detail.tampering')} passed={!ai.tamperingDetected} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', marginTop: '6px' }}>
-              <span style={{ fontSize: '12.5px', color: 'var(--text2)' }}>Overall confidence</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--text2)' }}>{t('detail.overallConfidence')}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '100px', height: '5px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div style={{ width: `${ai.overallScore || 0}%`, height: '100%', background: ai.overallScore > 70 ? 'var(--green)' : 'var(--amber)', borderRadius: '3px' }} />
@@ -147,27 +148,25 @@ const TransferDetail = () => {
                 <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', color: ai.overallScore > 70 ? 'var(--green)' : 'var(--amber)' }}>{ai.overallScore || 0}%</span>
               </div>
             </div>
-            <ValidationRow label="OCR confidence" passed={transfer.ocrConfidence > 60} value={`${transfer.ocrConfidence || 0}%`} />
+            <ValidationRow label={t('detail.ocrConfidence')} passed={transfer.ocrConfidence > 60} value={`${transfer.ocrConfidence || 0}%`} />
           </div>
 
-          {/* Audit trail */}
           <div className="card">
-            <div className="section-title">audit trail</div>
-            <TL icon="◈" time={created.toLocaleTimeString('en-EG')} text="Screenshot received & saved" />
-            <TL icon="⌕" time={created.toLocaleTimeString('en-EG')} text={`OCR completed — ${transfer.ocrConfidence}% confidence`} />
-            <TL icon="⚡" time={created.toLocaleTimeString('en-EG')} text="AI parsing & validation complete" />
-            <TL icon="⬡" time={created.toLocaleTimeString('en-EG')} text={`Saved to MongoDB${transfer.sheetsSynced ? ' + Google Sheets' : ''}`} />
+            <div className="section-title">{t('detail.auditTrail')}</div>
+            <TL icon="◈" time={timeFmt(created)} text={t('detail.received')} />
+            <TL icon="⌕" time={timeFmt(created)} text={t('detail.ocrDone', { pct: transfer.ocrConfidence || 0 })} />
+            <TL icon="⚡" time={timeFmt(created)} text={t('detail.aiDone')} />
+            <TL icon="⬡" time={timeFmt(created)} text={`${t('detail.savedMongo')}${transfer.sheetsSynced ? t('detail.savedSheets') : ''}`} />
             {transfer.verifiedAt && (
-              <TL icon="✓" time={new Date(transfer.verifiedAt).toLocaleTimeString('en-EG')} text="Marked as verified by admin" />
+              <TL icon="✓" time={timeFmt(new Date(transfer.verifiedAt))} text={t('detail.verifiedByAdmin')} />
             )}
           </div>
         </div>
       </div>
 
-      {/* OCR Raw Text */}
       {transfer.ocrRawText && (
         <div className="card">
-          <div className="section-title">raw OCR output</div>
+          <div className="section-title">{t('detail.rawOcr')}</div>
           <pre style={{ fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--text2)', whiteSpace: 'pre-wrap', lineHeight: '1.8', background: 'var(--bg3)', padding: '12px', borderRadius: '6px', margin: 0 }}>
             {transfer.ocrRawText}
           </pre>

@@ -32,7 +32,7 @@
   content: '';
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -280,7 +280,7 @@ select.input { cursor: pointer; }
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
 thead th {
-  text-align: right;
+  text-align: start;
   font-family: var(--mono);
   font-size: 10.5px;
   letter-spacing: 0.5px;
@@ -332,6 +332,37 @@ td.amount { font-family: var(--mono); font-size: 13px; font-weight: 700; color: 
   gap: 8px;
 }
 .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.search-wrap .search-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.search-wrap .search-input {
+  padding-inline-start: 32px;
+}
+
+.lang-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: 0 8px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--mono);
+  flex-shrink: 0;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.lang-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
 
 /* Responsive */
 @media (max-width: 900px) {
